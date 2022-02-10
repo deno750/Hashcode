@@ -6,7 +6,11 @@ Repos for google hash code problems
 **2022 Practice Problem:** [One Pizza](https://github.com/deno750/Hashcode/tree/main/onePizza)  
 **Results:** A:0, B:0, C:0, D:0, E:0
 
-
+## Usage
+All the code is writte in python 3.6+  
+Library used:
+ - [networkx](https://networkx.org/)
+ - [numpy](https://numpy.org/install/)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
