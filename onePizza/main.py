@@ -242,12 +242,12 @@ def clique_heuristic(clients, ingredients):
     best_anti_clique = anti_clique
     best_score = measure_score(anti_clique, clients)
     print(f"Initial solution: {best_score}")
-    num_iter = 100
+    num_iter = 1000
 
     for i in range(num_iter):
         min_removals = len(anti_clique) // 8 # Hyperparameter
         max_removals = len(anti_clique) // 2 # Hyperparameter
-        num_removals = len(anti_clique) // 4#random.choice(range(min_removals, max_removals)) 
+        num_removals = max_removals#random.choice(range(min_removals, max_removals)) 
         removed = np.random.choice(anti_clique, num_removals)
         anti_clique = [x for x in anti_clique if x not in removed]
         
