@@ -84,11 +84,8 @@ def save_solution(solution=None,filename=None):
   f.write(str(N)+"\n")
   for cache_id,videos in solution:
     out=[cache_id]+videos
-    print(out)
     out=list(map(str,out))
-    print(out)
     out=" ".join(out)
-    print(out)
 
     f.write(out+"\n")
 
