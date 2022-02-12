@@ -55,18 +55,19 @@ def construct_conflict_matrix(clients, ingredients):
     for ing in range(problem_matrix.shape[1]):
         liked_indexes = np.where(problem_matrix[:, ing] == 1)[0]
         disliked_indexes = np.where(problem_matrix[:, ing] == -1)[0]
-        if len(liked_indexes) == len(clients) or len(liked_indexes) == 0 or len(disliked_indexes) == len(clients) or len(disliked_indexes) == 0:
+        if len(liked_indexes) == 0 or len(disliked_indexes) == 0:
             continue
         for i in liked_indexes:
             for j in disliked_indexes:
                 if i == j:
                     continue
                 conflict_matrix[i][j] = 1
-        for i in disliked_indexes:
-            for j in liked_indexes:
-                if i == j:
-                    continue
-                conflict_matrix[i][j] = 1
+                conflict_matrix[j][i] = 1
+        #for i in disliked_indexes:
+        #    for j in liked_indexes:
+        #        if i == j:
+        #            continue
+        #        conflict_matrix[i][j] = 1
         
 
     return conflict_matrix
@@ -93,25 +94,8 @@ def caclulate_vertices_degree(conflict_matrix):
         degrees.append(np.sum(conflict_matrix[v]))
     return np.array(degrees)
 
-# Initialization algoithms. Each of them returns the anti-clique
-def calculate_anticlique_with_greedy(clients, conflict_matrix, start_node):
-    anti_clique = []
-    
-    for v in range(start_node, len(clients)):
-        if v in anti_clique:
-            continue
-
-        toadd = True
-        for u in anti_clique:
-            if conflict_matrix[v][u] == 1: # Checks if the node v violates the anti-clique constraint with the nodes added in anti-clique list
-                toadd = False
-                break
-        
-        if toadd:
-            anti_clique.append(v)
-    return anti_clique
-
-# Best initialization algorithm so far
+# Initialization algoithms.
+# Best initialization algorithm so far. Returns the anti_clique
 def clique_degree_heur(conflict_matrix):
     degrees = caclulate_vertices_degree(conflict_matrix)
     sorted_degrees = np.argsort(degrees)
@@ -128,109 +112,6 @@ def clique_degree_heur(conflict_matrix):
     return anti_clique
 
 ###### SOLVING STRATEGIES ##########
-def clique_solver_greedy(clients, conflict_matrix, start_node):
-    selected_ingredients = []
-    anti_clique = calculate_anticlique_with_greedy(clients, conflict_matrix, start_node)
-
-    print(np.array(sorted(anti_clique)) + 1)
-
-    for i in anti_clique:
-        for ing in clients[i].liked:
-            if ing not in selected_ingredients:
-                selected_ingredients.append(ing)
-    
-    return selected_ingredients
-
-def clique_solver_greedy_multistart(clients, ingredients):
-    conflict_matrix = construct_conflict_matrix(clients, ingredients)
-    best_ingredients = []
-    best_score = 0
-    for node in range(len(clients)):
-        selected_ingr = clique_solver_greedy(clients, conflict_matrix, node)
-        score = calculate_points(clients, selected_ingr)
-        if score > best_score:
-            best_score = score
-            best_ingredients = selected_ingr
-            print(f"New score: {best_score}")
-    return best_ingredients
-
-def clique_solver_randomized_greedy(clients, ingredients):
-    conflict_matrix = construct_conflict_matrix(clients, ingredients)
-    random_node = random.choice(range(len(clients)))
-    return clique_solver_greedy(clients, conflict_matrix, random_node)
-
-def clique_multi_random_greedy(clients, ingredients):
-    conflict_matrix = construct_conflict_matrix(clients, ingredients)
-    num_iter = 500
-    best_ingredients = []
-    best_score = 0
-    for i in range(num_iter):
-        random_node = random.choice(range(len(clients)))
-        selected_ingr = clique_solver_greedy(clients, conflict_matrix, random_node)
-        score = calculate_points(clients, selected_ingr)
-        if score > best_score:
-            best_score = score
-            best_ingredients = selected_ingr
-            print(f"New score: {best_score}")
-    return best_ingredients
-
-
-def clique_tabu(clients, ingredients):
-    conflict_matrix = construct_conflict_matrix(clients, ingredients)
-    anti_clique = clique_degree_heur(conflict_matrix)
-    best_anti_clique = anti_clique
-    best_score = measure_score(anti_clique, clients)
-    print(f"Initial solution: {best_score}")
-    tabulist = np.zeros(len(clients))
-    tenure_iter = 15
-    tot_iter = 1000
-    min_tenure = 5#int(len(clients) * 0.05)
-    max_tenure = len(clients) // 4
-    curr_tenure = min_tenure
-
-    def is_node_tabu(node, iter, tenure):
-        if tabulist[node] < 0:
-            return False
-        #print(f"{node} Tabu value is {tabulist[node]}")
-        if iter - tabulist[node] >= tenure:
-            tabulist[node] = 0
-            return False
-        return True
-
-    for curriter in range(1, tot_iter):
-        print(f"{curriter}/{tot_iter}  {curr_tenure}   len: {len(anti_clique)}  tabulen {np.count_nonzero(tabulist > 0)}")
-        removed = np.random.choice(anti_clique, curr_tenure)
-        anti_clique = [x for x in anti_clique if x not in removed]
-
-        for r in removed:
-            tabulist[r] = curriter
-        
-        added = 0
-        for v in range(len(clients)):
-            if is_node_tabu(v, curriter, curr_tenure) or v in anti_clique:
-                continue
-            toadd = True
-            for u in anti_clique:
-                if conflict_matrix[v][u] == 1:
-                    toadd = False
-                    break
-            if toadd:
-                anti_clique.append(v)
-                added += 1
-        print(f"Added {added}")
-        
-        score = measure_score(anti_clique, clients)
-        if score > best_score:
-            best_score = score
-            best_anti_clique = anti_clique
-            print(f"New score: {best_score}     len is {len(anti_clique)}")
-        
-        # Step policy
-        if curriter % tenure_iter == 0:
-            curr_tenure = min_tenure if curr_tenure == max_tenure else max_tenure
-            print(f"Changed tenure: {curr_tenure}")
-    
-    return ingredients_from_anticlique(best_anti_clique, clients)
 
 ### BEST EURISTIC SO FAR
 # Finds an anti-clique with a constrcutive heuristic. 
@@ -241,7 +122,7 @@ def clique_heuristic(clients, ingredients):
     anti_clique = clique_degree_heur(conflict_matrix)
     best_anti_clique = anti_clique
     best_score = measure_score(anti_clique, clients)
-    print(f"Initial solution: {best_score}")
+    print(f"Initial solution: {best_score} clique size: {len(anti_clique)}")
     num_iter = 1000
 
     for i in range(num_iter):
@@ -251,47 +132,28 @@ def clique_heuristic(clients, ingredients):
         removed = np.random.choice(anti_clique, num_removals)
         anti_clique = [x for x in anti_clique if x not in removed]
         
-        ### METHOD 1
-        ### Adds the clique using greedy
-        #for v in range(len(clients)):
-        #    if v in removed or v in anti_clique:
-        #        continue
-        #    toadd = True
-        #    for u in anti_clique:
-        #        if conflict_matrix[v][u] == 1:
-        #            toadd = False
-        #            break
-        #    if toadd:
-        #        anti_clique.append(v)
-
-        ### METHOD 2
         ### Adds to the anti-clique the nodes with lowest degree first
-        #degrees = caclulate_vertices_degree(conflict_matrix)
-        #sorted_degrees = np.argsort(degrees)
-        #for v in sorted_degrees:
-        #    if v in removed or v in anti_clique:
-        #        continue
-        #    toadd = True
-        #    for u in anti_clique:
-        #        if conflict_matrix[v][u] == 1:
-        #            toadd = False
-        #            break
-        #    if toadd:
-        #        anti_clique.append(v)
-
-        ### METHOD 3
-        ### Picks randomly a node to add to the clique
-        for _ in range(len(clients)):
-            v = np.random.choice(range(len(clients)))
-            #if v in removed or v in anti_clique:
+        degrees = caclulate_vertices_degree(conflict_matrix)
+        sorted_degrees = np.argsort(degrees)
+        for v in sorted_degrees:
+            if v in removed or v in anti_clique:
+                continue
+            toadd = True
+            for u in anti_clique:
+                if conflict_matrix[v][u] == 1:
+                    toadd = False
+                    break
+            if toadd:
+                anti_clique.append(v)
+        for v in sorted(removed):
             if v in anti_clique:
                 continue
-            toAdd = True
+            toadd = True
             for u in anti_clique:
-                if conflict_matrix[u][v] == 1:
-                    toAdd = False
+                if conflict_matrix[v][u] == 1:
+                    toadd = False
                     break
-            if toAdd:
+            if toadd:
                 anti_clique.append(v)
 
 
@@ -302,6 +164,23 @@ def clique_heuristic(clients, ingredients):
             print(f"New score: {best_score}     len is {len(anti_clique)}")
             
     return ingredients_from_anticlique(best_anti_clique, clients)
+    
+
+def clique_simulated_annealing(clients, ingredients):
+    conflict_matrix = construct_conflict_matrix(clients, ingredients)
+    anti_clique = clique_degree_heur(conflict_matrix)
+    best_anti_clique = anti_clique
+    best_score = measure_score(anti_clique, clients)
+
+    temperature = 200
+    alpha = 0.8
+    max_iter = 1000
+    for k in range(max_iter):
+        
+        
+        
+        
+        temperature = alpha * temperature
 
 def solve_problem(clients, ingredients):
     selected_ingredients = clique_heuristic(clients, ingredients)
