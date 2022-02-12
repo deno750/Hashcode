@@ -21,6 +21,9 @@ From your python code you just need to call:
 - simulate_all()
 other functions are used to input/output debug
 
+
+
+
 """
 
 
@@ -28,9 +31,31 @@ other functions are used to input/output debug
 def read_input_file(filename):
   f = open(filename, "r")
 
-  #... COMPLETE ...
-  problem_instance=...
-  #... COMPLETE ...
+  V,E,R,C,X=list(map(int,f.readline().strip().split(" ")))
+
+  videos_size=list(map(int,f.readline().strip().split(" ")))
+
+  #for each endpoint
+  endpoints={}  # endpoint_id-->(datacenter_lat, cache_servers,requests)
+                                                #cache_servers: server_id-->server_lat
+                                                #requests [(video_id,quantity),...]
+  for endpoint_id in range(E):
+    datacenter_lat,K=list(map(int,f.readline().strip().split(" ")))
+
+    #for each cache server
+    cache_servers={}  #server_id--->server_lat
+    for _ in range(K):
+      server_id,server_lat=list(map(int,f.readline().strip().split(" ")))
+      cache_servers[server_id]=server_lat
+
+    endpoints[endpoint_id]=(datacenter_lat,cache_servers,[])
+
+  for _ in range(R):
+    id_video,id_endpoint,quantity=list(map(int,f.readline().strip().split(" ")))
+
+    endpoints[id_endpoint][2].append((id_video,quantity))
+
+  problem_instance=(V,E,R,C,X,videos_size,endpoints)
 
   f.close()
 
@@ -39,19 +64,33 @@ def read_input_file(filename):
 #Check if the input is parsed correctly
 def print_problem_instance(problem_instance):
 
-  #...COMPLETE...
+  for e in problem_instance:
+
+    print(e)
+  
 
   return
 
 #Save the solution into a file as described in the problem PDF
+#[   (cache_id,[video_id1,....]),....  ]
 def save_solution(solution=None,filename=None):
   if not solution or not filename:
     print("empty solution or empty filename")
   
   f = open(filename, "w")
 
-  #...COMPLETE...
-  f.write("blablabla"+"\n")
+  N=len(solution)
+
+  f.write(str(N)+"\n")
+  for cache_id,videos in solution:
+    out=[cache_id]+videos
+    print(out)
+    out=list(map(str,out))
+    print(out)
+    out=" ".join(out)
+    print(out)
+
+    f.write(out+"\n")
 
   f.close()
 
@@ -98,15 +137,17 @@ def simulate_solution(solution=None,problem_instance=None,verbose=0):
 """
 THE FOLLOWING LINES MUST BE COMMENTED WHEN SOLVING THE PROBLEM
 """
-""""
+"""
 #Check if the input is parsed correctly
-filename="a.txt"
+filename="data/a.in"
 problem_instance=read_input_file(filename)
 print_problem_instance(problem_instance)
 
 #check if the solution is saved correctly
-sol1=...  #COMPLETE
-savefile="solution_test.txt"
+sol1=[(0, [2]),(1, [3, 1]),(2, [0, 1])]
+print(sol1)
+savefile="solutions/solution_test.out"
+
 save_solution(sol1, savefile)
 sol2=read_solution_file(savefile)
 equal=compare_solutions(sol1,sol2)
