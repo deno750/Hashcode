@@ -98,7 +98,7 @@ def simulate_solution(solution=None,problem_instance=None,verbose=0):
 """
 THE FOLLOWING LINES MUST BE COMMENTED WHEN SOLVING THE PROBLEM
 """
-
+""""
 #Check if the input is parsed correctly
 filename="a.txt"
 problem_instance=read_input_file(filename)
@@ -115,5 +115,5 @@ else: print("Solution is saved correctly")
 
 #compute the score
 print(simulate_solution(sol1))
-
+"""
 
